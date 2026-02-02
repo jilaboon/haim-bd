@@ -373,24 +373,21 @@
         /* Tinder tag */
         .tinder-tag {
             font-size: 0.45em;
-            color: #fe3c72;
+            color: #fff;
             text-shadow:
-                -1px -1px 0 #000,
-                1px -1px 0 #000,
-                -1px 1px 0 #000,
-                1px 1px 0 #000,
                 0 0 10px #fe3c72,
-                0 0 20px #fe3c72;
+                0 0 20px #fe3c72,
+                0 0 30px #fe3c72,
+                0 0 40px #ff6b6b;
             letter-spacing: 0px;
             animation: tinderGlow 1.5s ease-in-out infinite alternate;
             font-weight: 700;
             display: inline;
-            -webkit-text-stroke: 0.5px #000;
         }
 
         @keyframes tinderGlow {
-            0% { text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 10px #fe3c72, 0 0 20px #fe3c72; }
-            100% { text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 15px #fe3c72, 0 0 30px #fe3c72, 0 0 40px #ff6b6b; }
+            0% { text-shadow: 0 0 10px #fe3c72, 0 0 20px #fe3c72, 0 0 30px #fe3c72, 0 0 40px #ff6b6b; }
+            100% { text-shadow: 0 0 20px #fe3c72, 0 0 40px #fe3c72, 0 0 60px #fe3c72, 0 0 80px #ff6b6b; }
         }
 
         /* Subtitle */
