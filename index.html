@@ -753,8 +753,10 @@
             <button class="music-btn" id="startMusic">כנסו כנסו 🎉</button>
         </div>
     </div>
-    <audio id="bgMusic" loop>
+    <audio id="bgMusic" loop playsinline preload="auto">
         <source src="music.mp3" type="audio/mpeg">
+        <source src="music.ogg" type="audio/ogg">
+        <source src="music.m4a" type="audio/mp4">
     </audio>
 
     <div class="haze"></div>
@@ -827,8 +829,36 @@
         const startMusicBtn = document.getElementById('startMusic');
         const bgMusic = document.getElementById('bgMusic');
 
+        // Mobile-friendly audio setup
+        bgMusic.preload = 'auto';
+        bgMusic.load();
+
         startMusicBtn.addEventListener('click', function() {
-            bgMusic.play();
+            // For mobile: need to play directly from user interaction
+            bgMusic.muted = false;
+            bgMusic.volume = 1.0;
+
+            const playPromise = bgMusic.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // Audio started successfully
+                    musicOverlay.classList.add('hidden');
+                }).catch((error) => {
+                    // Auto-play was prevented, try again
+                    console.log('Audio play failed:', error);
+                    // Still hide overlay, music might work on next interaction
+                    musicOverlay.classList.add('hidden');
+                });
+            } else {
+                musicOverlay.classList.add('hidden');
+            }
+        });
+
+        // Also handle touch events for mobile
+        startMusicBtn.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            bgMusic.play().catch(() => {});
             musicOverlay.classList.add('hidden');
         });
 
