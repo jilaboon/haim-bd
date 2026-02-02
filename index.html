@@ -698,6 +698,11 @@
             100% { transform: translateY(110vh) rotate(360deg); opacity: 0.5; }
         }
 
+        /* Pause all animations when page not visible */
+        body.paused * {
+            animation-play-state: paused !important;
+        }
+
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
             .haze, .haze2,
@@ -879,10 +884,42 @@ END:VCALENDAR`;
             URL.revokeObjectURL(link.href);
         }
 
-        // Visibility API - pause when tab hidden
+        // Visibility API - pause EVERYTHING when tab hidden
         let isVisible = true;
         document.addEventListener('visibilitychange', () => {
             isVisible = !document.hidden;
+            if (document.hidden) {
+                // Pause music when tab hidden
+                bgMusic.pause();
+            } else {
+                // Resume music only if overlay is hidden (user already clicked)
+                if (musicOverlay.classList.contains('hidden')) {
+                    bgMusic.play();
+                }
+            }
+        });
+
+        // Also pause on window blur (switching apps)
+        window.addEventListener('blur', () => {
+            isVisible = false;
+            bgMusic.pause();
+            document.body.classList.add('paused');
+        });
+
+        window.addEventListener('focus', () => {
+            isVisible = true;
+            document.body.classList.remove('paused');
+            if (musicOverlay.classList.contains('hidden')) {
+                bgMusic.play();
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                document.body.classList.add('paused');
+            } else {
+                document.body.classList.remove('paused');
+            }
         });
 
         // Generate twinkling stars (reduced from 100 to 40)
