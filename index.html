@@ -914,43 +914,78 @@ END:VCALENDAR`;
             URL.revokeObjectURL(link.href);
         }
 
-        // Visibility API - pause EVERYTHING when tab hidden
+        // Global state variables
         let isVisible = true;
-        document.addEventListener('visibilitychange', () => {
-            isVisible = !document.hidden;
-            if (document.hidden) {
-                // Pause music when tab hidden
-                bgMusic.pause();
-            } else {
-                // Resume music only if overlay is hidden (user already clicked)
-                if (musicOverlay.classList.contains('hidden')) {
-                    bgMusic.play();
-                }
-            }
-        });
+        let animationFrameId = null;
+        let bubbleCount = 0;
+        let confettiCount = 0;
+        let emojiCount = 0;
+        let particles = [];
+        let sparkles = [];
 
-        // Also pause on window blur (switching apps)
-        window.addEventListener('blur', () => {
+        // Cleanup function to release ALL resources
+        function releaseResources() {
             isVisible = false;
             bgMusic.pause();
             document.body.classList.add('paused');
-        });
 
-        window.addEventListener('focus', () => {
+            // Cancel animation frame
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
+
+            // Clear all particles and sparkles
+            if (typeof particles !== 'undefined') particles = [];
+            if (typeof sparkles !== 'undefined') sparkles = [];
+
+            // Clear canvases
+            if (typeof ctx !== 'undefined' && typeof canvas !== 'undefined') {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+            if (typeof sparklesCtx !== 'undefined' && typeof sparklesCanvas !== 'undefined') {
+                sparklesCtx.clearRect(0, 0, sparklesCanvas.width, sparklesCanvas.height);
+            }
+
+            // Remove all dynamic elements
+            document.querySelectorAll('.bubble, .confetti-piece, .emoji').forEach(el => el.remove());
+            bubbleCount = 0;
+            confettiCount = 0;
+            emojiCount = 0;
+        }
+
+        // Resume function
+        function resumeAnimations() {
             isVisible = true;
             document.body.classList.remove('paused');
+
+            // Resume music if user already started it
             if (musicOverlay.classList.contains('hidden')) {
-                bgMusic.play();
+                bgMusic.play().catch(() => {});
+            }
+
+            // Restart animation loop if not running
+            if (!animationFrameId && !reducedMotion) {
+                animate();
+            }
+        }
+
+        // Listen to visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                releaseResources();
+            } else {
+                resumeAnimations();
             }
         });
 
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                document.body.classList.add('paused');
-            } else {
-                document.body.classList.remove('paused');
-            }
-        });
+        // Also pause on window blur (switching apps/tabs)
+        window.addEventListener('blur', releaseResources);
+        window.addEventListener('focus', resumeAnimations);
+
+        // Pause when page is about to be hidden (mobile browser switch)
+        window.addEventListener('pagehide', releaseResources);
+        window.addEventListener('pageshow', resumeAnimations);
 
         // Generate twinkling stars (reduced from 100 to 40)
         const starsContainer = document.getElementById('stars');
@@ -971,7 +1006,6 @@ END:VCALENDAR`;
 
         // Bubbles (reduced frequency)
         const bubblesContainer = document.getElementById('bubbles');
-        let bubbleCount = 0;
         const MAX_BUBBLES = 15;
 
         function createBubble() {
@@ -999,7 +1033,6 @@ END:VCALENDAR`;
 
         // Confetti (reduced frequency)
         const confettiContainer = document.getElementById('confetti');
-        let confettiCount = 0;
         const MAX_CONFETTI = 20;
 
         function createConfetti() {
@@ -1023,7 +1056,6 @@ END:VCALENDAR`;
         // Emoji rain (reduced frequency)
         const emojiContainer = document.getElementById('emojiRain');
         const emojis = ['🎉', '🔥', '🥂', '✨', '💜', '🎊', '🍾', '💫', '🌟', '🎈', '💃', '🕺'];
-        let emojiCount = 0;
         const MAX_EMOJIS = 8;
 
         function createEmoji() {
@@ -1056,8 +1088,6 @@ END:VCALENDAR`;
         const sparklesCanvas = document.getElementById('sparkles');
         const sparklesCtx = sparklesCanvas.getContext('2d');
 
-        let particles = [];
-        let sparkles = [];
         const MAX_PARTICLES = 200;
         const MAX_SPARKLES = 25;
 
@@ -1147,27 +1177,27 @@ END:VCALENDAR`;
 
         // Single animation loop for both canvases
         function animate() {
-            if (reducedMotion) return;
-
-            // Only animate if visible
-            if (isVisible) {
-                // Fireworks
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                particles = particles.filter(p => p.alpha > 0);
-                particles.forEach(p => { p.update(); p.draw(); });
-                ctx.globalAlpha = 1;
-
-                // Sparkles
-                sparklesCtx.clearRect(0, 0, sparklesCanvas.width, sparklesCanvas.height);
-                if (sparkles.length < MAX_SPARKLES && Math.random() < 0.1) {
-                    sparkles.push(new Sparkle());
-                }
-                sparkles = sparkles.filter(s => !s.isDead());
-                sparkles.forEach(s => { s.update(); s.draw(); });
-                sparklesCtx.globalAlpha = 1;
+            if (reducedMotion || !isVisible) {
+                animationFrameId = null;
+                return;
             }
 
-            requestAnimationFrame(animate);
+            // Fireworks
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles = particles.filter(p => p.alpha > 0);
+            particles.forEach(p => { p.update(); p.draw(); });
+            ctx.globalAlpha = 1;
+
+            // Sparkles
+            sparklesCtx.clearRect(0, 0, sparklesCanvas.width, sparklesCanvas.height);
+            if (sparkles.length < MAX_SPARKLES && Math.random() < 0.1) {
+                sparkles.push(new Sparkle());
+            }
+            sparkles = sparkles.filter(s => !s.isDead());
+            sparkles.forEach(s => { s.update(); s.draw(); });
+            sparklesCtx.globalAlpha = 1;
+
+            animationFrameId = requestAnimationFrame(animate);
         }
 
         if (!reducedMotion) {
